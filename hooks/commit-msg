@@ -1,0 +1,22 @@
+#!/usr/bin/env node
+// membrane — commit-msg enforcement hook.
+//
+// Validates the five-verb lineage trailer + faucet-signal declaration so the
+// memory discipline can't silently drift. Logic is verbatim from the `membrane`
+// skill (§"The enforcement hook"). Non-membrane commits (no `Action:` line) pass
+// untouched, so this is safe to install in a repo that also holds non-corpus
+// commits.
+//
+// Install:  hooks/install.sh   (or: cp hooks/commit-msg .git/hooks/ && chmod +x)
+const msg = require("fs").readFileSync(process.argv[2], "utf8");
+const f = (k) => (msg.match(new RegExp("^" + k + ":\\s*(.+)$", "m")) || [])[1];
+const action = f("Action");
+const need = { create:[], evolve:["Occludes"], merge:["Parents"], split:["Parents"], correct:["Severs","Reason"] };
+const fail = (m) => { console.error("membrane: rejected — " + m); process.exit(1); };
+if (!action) process.exit(0);                       // non-membrane commits pass
+if (!need[action]) fail(`unknown Action '${action}'`);
+if (!f("Concept")) fail("missing Concept:");
+for (const k of need[action]) if (!f(k)) fail(`Action ${action} requires ${k}:`);
+const none = /^Signals:\s*none\b/im.test(msg), nSig = (msg.match(/^Signal:\s*\S+/gim) || []).length;
+if (!none && !nSig) fail("declare a 'Signal:' line or 'Signals: none'");
+if (action === "correct" && !nSig) fail("correct is intrinsically a signal — not 'none'");
