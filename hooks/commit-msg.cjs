@@ -153,3 +153,32 @@ if (touchesOKF) {
       fail("World Model", "Action correct is intrinsically attention-worthy — declare a 'Signal:', not acknowledged-none", WM_HELP);
   }
 }
+
+// ---------------------------------------------------------------------------
+// 3. MEASURED signals — run the WMFX ENGINE on THIS commit and seal its output
+//    into the message. commit-msg can still edit the message, so the engine's
+//    result becomes part of the commit. The git log is then ONE unified series:
+//    inferred signals the agent declared above + measured signals the engine
+//    computes here. We invoke the engine-COMPILED instrument binary (cc_live) —
+//    NEVER a re-implementation of the model's rule. If the binary isn't built,
+//    we skip silently (build at install) — the measured layer never blocks a commit.
+// ---------------------------------------------------------------------------
+const CC = "models/commit_cadence/cc_live";
+if (fs.existsSync(CC)) {
+  try {
+    // gap_min = the silence before THIS commit = now − the parent commit's time
+    let gap = 0;
+    try {
+      const ct = parseInt(execFileSync("git", ["log", "-1", "--format=%ct", "HEAD"], { encoding: "utf8" }).trim(), 10);
+      gap = (Date.now() / 1000 - ct) / 60;
+    } catch { gap = 0; } // first commit — no parent
+    const [value, alarm] = execFileSync(CC, [gap.toFixed(1)], { encoding: "utf8" }).trim().split(/\s+/);
+    const line = `Signal: commit-silence value=${value} measured${alarm === "1" ? " stall" : ""}`;
+    const lines = msg.split("\n");
+    const h = lines.findIndex((l) => /^##\s+world model\s*$/i.test(l));
+    if (h >= 0) lines.splice(h + 1, 0, line);
+    else lines.push("", "## World Model", line);
+    fs.writeFileSync(process.argv[2], lines.join("\n"));
+    console.error(`  worldmodel: engine ran → commit-silence=${value}${alarm === "1" ? " (STALL)" : ""} — sealed into the commit`);
+  } catch { /* measured layer is best-effort — never block a commit on it */ }
+}
