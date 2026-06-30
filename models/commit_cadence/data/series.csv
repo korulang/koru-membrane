@@ -1,0 +1,7 @@
+idx,iso,gap_min,files,ins,del,sha,subject
+0,2026-06-29T02:15:51,0.0,4,97,0,65a3f014e7b7,Shared Membrane corpus for the koru family: OKF store + lineage hook
+1,2026-06-30T17:56:55,2381.1,6,311,32,2d3cbd296fef,feat(discipline): membrane+worldmodel git gate  faucet  recorder  ubiquitous install
+2,2026-06-30T18:49:20,52.4,8,60,2,ff96d16c385a,feat(interface): signals/ is a real artifact now — the local signal interface
+3,2026-06-30T18:54:03,4.7,1,90,0,183f440ba578,feat(signals): the catalog tool — consistency check + ls (the static interface check)
+4,2026-06-30T19:00:01,6.0,1,6,0,c45f302260f7,feat(signals): rush-hour-index — the buddy-comedy metric  0..1
+5,2026-06-30T19:01:34,1.6,0,0,0,82da038dabcb,signal: rush-hour-index recalibrated up — the exasperation IS the affection
