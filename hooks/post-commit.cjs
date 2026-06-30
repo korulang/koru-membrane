@@ -1,0 +1,71 @@
+#!/usr/bin/env node
+// membrane + worldmodel — post-commit faucet (the cross-repo link).
+//
+// After a commit lands in a CONSUMER repo (koru, koru-libs, …), if its
+// `## World Model` section declared a BELIEF-CLASS signal — contradiction,
+// regime-change, or correction — then a belief about Koru just changed and it
+// must reach the shared corpus. This faucet does NOT silently write the corpus
+// (no magic daemon mutating another repo behind your back). It QUEUES the
+// obligation durably into the corpus inbox and surfaces it, so an AGENT closes
+// the loop by recording the belief. A human is never in this loop.
+//
+// Routine commits (mechanical signals, or `Signals: acknowledged-none`) produce
+// nothing here — the link only fires when YOU declared a belief changed.
+
+const fs = require("fs");
+const path = require("path");
+const { execFileSync } = require("child_process");
+const git = (a) => execFileSync("git", a, { encoding: "utf8" }).trim();
+
+const BELIEF = new Set(["contradiction", "regime-change", "correction"]);
+
+function sectionBody(text, name) {
+  let cur = null, buf = [];
+  for (const line of text.split("\n")) {
+    const h = line.match(/^##\s+(.*\S)\s*$/);
+    if (h) { if (cur === name) break; cur = h[1].toLowerCase(); continue; }
+    if (cur === name) buf.push(line);
+  }
+  return cur === null && !buf.length ? "" : buf.join("\n");
+}
+
+const msg = git(["log", "-1", "--format=%B"]);
+const sha = git(["rev-parse", "--short", "HEAD"]);
+
+// A recording (a commit that writes concept files) is a belief LANDING in the
+// corpus, not a source belief needing routing. Skip it — this is what lets the
+// faucet be installed uniformly everywhere (even on a self-contained repo that is
+// its own corpus) without the recording re-queuing itself into an endless loop.
+const touched = git(["show", "--name-only", "--format=", "HEAD"]).split("\n").filter(Boolean);
+if (touched.some((f) => /(^|\/)concepts\/[^/]+\.md$/.test(f))) process.exit(0);
+
+const wm = sectionBody(msg, "world model");
+const signals = [...wm.matchAll(/^Signal:\s*(\S+)\s*(.*)$/gim)]
+  .map((m) => ({ type: m[1].toLowerCase(), line: (m[1] + " " + (m[2] || "")).trim() }))
+  .filter((s) => BELIEF.has(s.type));
+if (!signals.length) process.exit(0); // routine commit — nothing to route
+
+const top = git(["rev-parse", "--show-toplevel"]);
+const ptr = path.join(top, ".membrane");
+if (!fs.existsSync(ptr)) {
+  console.error("\n● belief signal fired, but this repo has no .membrane store pointer.");
+  console.error("  wire it once:  koru-membrane/hooks/install.sh " + top + " /path/to/koru-membrane\n");
+  process.exit(0);
+}
+const store = fs.readFileSync(ptr, "utf8").trim();
+const repo = path.basename(top);
+const inbox = path.join(store, "inbox");
+fs.mkdirSync(inbox, { recursive: true });
+const pendingFile = path.join(inbox, "pending.jsonl");
+
+for (const s of signals) {
+  const rec = { ts: new Date().toISOString(), repo, sha, subject: msg.split("\n")[0], type: s.type, signal: s.line };
+  fs.appendFileSync(pendingFile, JSON.stringify(rec) + "\n");
+}
+const n = fs.readFileSync(pendingFile, "utf8").trim().split("\n").filter(Boolean).length;
+
+console.error(`\n● belief signal fired — a Koru belief changed and must reach the corpus.`);
+console.error(`    repo:   ${repo} @ ${sha}`);
+for (const s of signals) console.error(`    signal: ${s.line}`);
+console.error(`    queued → ${pendingFile}  (${n} pending)`);
+console.error(`  An agent drains the inbox into the corpus. You never run anything.\n`);
