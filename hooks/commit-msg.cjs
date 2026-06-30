@@ -83,6 +83,22 @@ const nSignals = (wm.match(/^Signal:\s*\S+/gim) || []).length;
 if (!wmAckNone && nSignals === 0)
   fail("World Model", "declare a 'Signal: <type> ...' line, or 'Signals: acknowledged-none'", WM_HELP);
 
+// --- coherence: every declared signal resolves to the repo's interface ---
+// register-on-miss — the interface GROWS as you declare, never blocks. You can't
+// make up a signal: declaring one that isn't defined defines it (as an orphan).
+// That's the floatable local ontology accumulating on its own, statically checked.
+for (const nm of [...wm.matchAll(/^Signal:\s*(\S+)/gim)].map((m) => m[1])) {
+  const sigPath = `signals/${nm}.signal`;
+  if (fs.existsSync(sigPath)) continue;
+  try {
+    fs.mkdirSync("signals", { recursive: true });
+    fs.writeFileSync(sigPath,
+      `name: ${nm}\nkind: inferred\nshape: categorical\nface: in\nmembrane: false\n` +
+      `note: auto-registered orphan — declared before it was defined; refine me\n`);
+    console.error(`  worldmodel: registered new signal → ${sigPath} (orphan; refine + commit it)`);
+  } catch { /* signals/ not writable here — collection still lives in the log */ }
+}
+
 // ---------------------------------------------------------------------------
 // 2. Membrane gate — OKF-AWARE. Fires only when concept files are staged.
 // ---------------------------------------------------------------------------

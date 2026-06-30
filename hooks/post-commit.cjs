@@ -17,7 +17,13 @@ const path = require("path");
 const { execFileSync } = require("child_process");
 const git = (a) => execFileSync("git", a, { encoding: "utf8" }).trim();
 
-const BELIEF = new Set(["contradiction", "regime-change", "correction"]);
+// Routing is registry-driven, NOT a hardcoded list: a signal reaches the corpus
+// iff its interface file declares `membrane: true`. The interface decides what is
+// a belief worth recording — never a value-judgment baked into this hook.
+function isMembrane(name) {
+  try { return /^membrane:\s*true\b/im.test(fs.readFileSync(`signals/${name}.signal`, "utf8")); }
+  catch { return false; }
+}
 
 function sectionBody(text, name) {
   let cur = null, buf = [];
@@ -42,7 +48,7 @@ if (touched.some((f) => /(^|\/)concepts\/[^/]+\.md$/.test(f))) process.exit(0);
 const wm = sectionBody(msg, "world model");
 const signals = [...wm.matchAll(/^Signal:\s*(\S+)\s*(.*)$/gim)]
   .map((m) => ({ type: m[1].toLowerCase(), line: (m[1] + " " + (m[2] || "")).trim() }))
-  .filter((s) => BELIEF.has(s.type));
+  .filter((s) => isMembrane(s.type));
 if (!signals.length) process.exit(0); // routine commit — nothing to route
 
 const top = git(["rev-parse", "--show-toplevel"]);
