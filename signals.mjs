@@ -116,7 +116,13 @@ function emit(args) {
     source: opt("--source", "unknown"),
   };
   fs.appendFileSync(path.join(d, "bus.jsonl"), JSON.stringify(rec) + "\n");
-  console.log(`emit ${name} (${kind})${rec.value != null ? " value=" + rec.value : ""} → ${path.join(d, "bus.jsonl")}`);
+  // Also slide it onto the live Cordial signals surface (:6285) — best-effort.
+  const surfaceUrl = `http://localhost:${process.env.CORDIAL_SIGNALS_PORT || 6285}/signal`;
+  try {
+    execFileSync("curl", ["-s", "-m", "2", "-X", "POST", "-H", "content-type: application/json",
+      "-d", JSON.stringify({ name, kind, value: rec.value ?? undefined, note: rec.note ?? undefined, source: rec.source }), surfaceUrl], { stdio: "ignore" });
+  } catch { /* surface down — never block */ }
+  console.log(`emit ${name} (${kind})${rec.value != null ? " value=" + rec.value : ""} → bus + surface`);
 }
 
 if (cmd === "check") check();

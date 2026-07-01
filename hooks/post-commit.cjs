@@ -38,6 +38,37 @@ function sectionBody(text, name) {
 const msg = git(["log", "-1", "--format=%B"]);
 const sha = git(["rev-parse", "--short", "HEAD"]);
 
+// --- Surface pass: every Signal: line the gate sealed into this commit — measured
+// AND inferred — slides onto the Cordial signals surface (:6285) as a live card. This
+// is the git-log → live-bus bridge: what the commit body carries becomes something you
+// WATCH arrive. Best-effort and non-blocking — the surface may be down; a commit never
+// waits on it. Mesh-wide by construction: any repo posts to the one central surface.
+function surfaceSignals() {
+  const url = `http://localhost:${process.env.CORDIAL_SIGNALS_PORT || 6285}/signal`;
+  const repo = path.basename(git(["rev-parse", "--show-toplevel"]));
+  const sigMeta = (name) => {
+    try {
+      const f = fs.readFileSync(`signals/${name}.signal`, "utf8");
+      const g = (k) => (f.match(new RegExp("^" + k + ":\\s*(\\S+)", "im")) || [])[1];
+      return { kind: g("kind"), face: g("face") };
+    } catch { return {}; }
+  };
+  const lines = [...sectionBody(msg, "world model").matchAll(/^Signal:\s*(.+)$/gim)].map((m) => m[1].trim());
+  for (const line of lines) {
+    const name = (line.match(/^(\S+)/) || [])[1];
+    if (!name) continue;
+    const meta = sigMeta(name);
+    const vm = line.match(/value=(\S+)/);
+    const value = vm ? (Number.isFinite(Number(vm[1])) ? Number(vm[1]) : vm[1]) : undefined;
+    const note = line.replace(/^\S+\s*/, "").replace(/value=\S+/, "").replace(/\b(measured|stall)\b/g, "").replace(/^[—\-\s]+/, "").trim();
+    const body = { name, kind: meta.kind || (/\bmeasured\b/.test(line) ? "measured" : "inferred"), value, face: meta.face, note: note || undefined, source: repo };
+    try {
+      execFileSync("curl", ["-s", "-m", "2", "-X", "POST", "-H", "content-type: application/json", "-d", JSON.stringify(body), url], { stdio: "ignore" });
+    } catch { /* surface down — never block a commit */ }
+  }
+}
+surfaceSignals();
+
 // A recording (a commit that writes concept files) is a belief LANDING in the
 // corpus, not a source belief needing routing. Skip it — this is what lets the
 // faucet be installed uniformly everywhere (even on a self-contained repo that is
