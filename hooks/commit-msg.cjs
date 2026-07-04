@@ -28,7 +28,7 @@
 const fs = require("fs");
 const { execFileSync } = require("child_process");
 
-const msg = fs.readFileSync(process.argv[2], "utf8");
+let msg = fs.readFileSync(process.argv[2], "utf8");
 
 // Mechanical, git-generated commits are not authored belief-changes — exempt them.
 const firstLine = msg.split("\n").find((l) => l.trim()) || "";
@@ -46,9 +46,16 @@ function sections(text) {
   for (const k of Object.keys(out)) out[k] = out[k].join("\n");
   return out;
 }
-const secs = sections(msg);
+let secs = sections(msg);
 const keyIn = (text, k) =>
   text == null ? undefined : (text.match(new RegExp("^" + k + ":\\s*(.+)$", "m")) || [])[1];
+
+// A signal is belief-class iff its interface declares `membrane: true`. Registry-
+// driven, never a hardcoded list — the same rule the post-commit faucet routes on.
+const isMembraneSignal = (name) => {
+  try { return /^membrane:\s*true\b/im.test(fs.readFileSync(`signals/${name}.signal`, "utf8")); }
+  catch { return false; }
+};
 
 function fail(discipline, reason, help) {
   console.error(`\n✗ ${discipline}: commit rejected — ${reason}\n`);
@@ -57,21 +64,25 @@ function fail(discipline, reason, help) {
   process.exit(1);
 }
 
-const WM_HELP = `  Every commit answers one question: did a belief about Koru change here?
+const WM_HELP = `  Every commit answers one question: did a belief about the system change here?
     ## World Model
     Signal: contradiction — <what flipped, and against which prior belief>
   If nothing here is belief-worthy, acknowledge it on purpose:
     ## World Model
     Signals: acknowledged-none`;
 
-const MEM_HELP = `  This commit stages OKF concept files, so declare how the belief evolved:
+const MEM_HELP = `  Every commit answers a second question: did a durable belief change here?
+  If YES — stage the concept edit and declare the lineage:
     ## Membrane
     Action: evolve                      # create | evolve | merge | split | correct
     Concept: frag-<id>
-    Occludes: <prior-blob-sha>          # evolve
+    Occludes: <prior-blob-sha>          # evolve   (auto-derived if you omit it)
     Parents: frag-<id>, frag-<id>       # merge | split
     Severs: frag-<id>@<blob-sha>        # correct
-    Reason: <why the prior belief was wrong>   # correct`;
+    Reason: <why the prior belief was wrong>   # correct
+  If NO — acknowledge it on purpose (a conscious "nothing to garden"):
+    ## Membrane
+    Evolution: acknowledged-none`;
 
 // ---------------------------------------------------------------------------
 // 1. World Model gate — UNIVERSAL. Fires on every authored commit.
@@ -100,22 +111,71 @@ for (const nm of [...wm.matchAll(/^Signal:\s*(\S+)/gim)].map((m) => m[1])) {
 }
 
 // ---------------------------------------------------------------------------
-// 2. Membrane gate — OKF-AWARE. Fires only when concept files are staged.
+// 2. Membrane gate — UNIVERSAL. Every commit answers "did a belief change?":
+//    either declare the lineage (with the concept staged) or a conscious
+//    'Evolution: acknowledged-none'. Silence is rejected — same forced-attention
+//    contract as the World Model gate. A belief-class signal (membrane: true)
+//    forbids acknowledged-none: you said a belief changed, so garden it here.
 // ---------------------------------------------------------------------------
+const memFail = (m) => fail("Membrane", m, MEM_HELP);
 let staged = [];
 try {
   staged = execFileSync("git", ["diff", "--cached", "--name-only"], { encoding: "utf8" })
     .split("\n").filter(Boolean);
 } catch { /* not in a repo / no index — skip OKF gate */ }
-const touchesOKF = staged.some((f) => /(^|\/)concepts\/[^/]+\.md$/.test(f));
+const okfStaged = staged.filter((f) => /(^|\/)concepts\/[^/]+\.md$/.test(f));
+const touchesOKF = okfStaged.length > 0;
+
+// A commit declares a belief changed iff it carries a Signal whose interface is
+// membrane: true (contradiction / correction / regime-change). That declaration
+// is a PROMISE to garden — the interlock below makes it non-skippable.
+const beliefSignal = [...wm.matchAll(/^Signal:\s*(\S+)/gim)].map((m) => m[1]).some(isMembraneSignal);
+
+// --- MECHANICAL SCAFFOLDING: derive the deterministic trailer fields from the
+// staged diff so the agent supplies only judgment (the verb + the belief), never
+// bookkeeping. Runs on every commit, in addition to explicit gardening walks.
+// Only fires when unambiguous (exactly one staged concept file); writes the
+// derived lines back into the message, exactly like the measured signal below.
+if (okfStaged.length === 1 && secs["membrane"] != null) {
+  const rel = okfStaged[0];
+  const id = rel.replace(/^.*\//, "").replace(/\.md$/, "");
+  const mem0 = secs["membrane"];
+  const action0 = keyIn(mem0, "Action");
+  const derived = [];
+  if (!keyIn(mem0, "Concept")) derived.push(`Concept: ${id}`);
+  if (action0 === "evolve" && !keyIn(mem0, "Occludes")) {
+    // the prior belief is the file's blob at HEAD — an evolve target already exists
+    try {
+      const prior = execFileSync("git", ["rev-parse", `HEAD:${rel}`], { encoding: "utf8" }).trim();
+      derived.push(`Occludes: ${prior}`);
+    } catch { /* not in HEAD → not an evolve target; validation below reports it */ }
+  }
+  if (derived.length) {
+    const lines = msg.split("\n");
+    const h = lines.findIndex((l) => /^##\s+membrane\s*$/i.test(l));
+    if (h >= 0) {
+      lines.splice(h + 1, 0, ...derived);
+      msg = lines.join("\n");
+      fs.writeFileSync(process.argv[2], msg);
+      secs = sections(msg);
+      console.error(`  membrane: scaffolded ${derived.map((d) => d.split(":")[0]).join(", ")} from the staged diff`);
+    }
+  }
+}
+
+const mem = secs["membrane"];
+const memAckNone = mem != null && /^Evolution:\s*acknowledged-none\b/im.test(mem);
+
+// Interlock: a declared belief-change MUST be gardened in this same commit.
+if (beliefSignal && !touchesOKF)
+  memFail("a belief-class signal fired, but no concept file is staged — a changed belief must be gardened in the same commit (stage the concept + declare the Action), never queued away");
+
+if (mem == null)
+  memFail("every commit must declare a '## Membrane' section: a lineage Action (with the concept staged), or 'Evolution: acknowledged-none'");
 
 if (touchesOKF) {
-  const memFail = (m) => fail("Membrane", m, MEM_HELP);
-  const mem = secs["membrane"];
-  if (mem == null)
-    memFail("this commit stages OKF concept files but has no '## Membrane' section");
   // acknowledged-none is FALSE when you actually changed concept files.
-  if (/^Evolution:\s*acknowledged-none\b/im.test(mem))
+  if (memAckNone)
     memFail("you staged concept files — 'Evolution: acknowledged-none' is false here; declare the lineage");
 
   const need = { create: [], evolve: ["Occludes"], merge: ["Parents"], split: ["Parents"], correct: ["Severs", "Reason"] };
@@ -152,6 +212,12 @@ if (touchesOKF) {
     if (nSignals === 0)
       fail("World Model", "Action correct is intrinsically attention-worthy — declare a 'Signal:', not acknowledged-none", WM_HELP);
   }
+} else {
+  // No concept files staged — the only legal declaration is a conscious opt-out.
+  if (keyIn(mem, "Action"))
+    memFail("you declared an Action but staged no concept file — stage the concept edit, or use 'Evolution: acknowledged-none'");
+  if (!memAckNone)
+    memFail("no concept staged and no lineage — declare 'Evolution: acknowledged-none' to consciously record that nothing here changed a durable belief");
 }
 
 // ---------------------------------------------------------------------------
