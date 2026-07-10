@@ -78,11 +78,19 @@ const MEM_HELP = `  Every commit answers a second question: did a durable belief
     Concept: frag-<id>
     Occludes: <prior-blob-sha>          # evolve   (auto-derived if you omit it)
     Parents: frag-<id>, frag-<id>       # merge | split
-    Severs: frag-<id>@<blob-sha>        # correct
+    Severs: frag-<id>@<blob-sha>        # correct  (auto-derived if you omit it)
     Reason: <why the prior belief was wrong>   # correct
   If NO — acknowledge it on purpose (a conscious "nothing to garden"):
     ## Membrane
-    Evolution: acknowledged-none`;
+    Evolution: acknowledged-none
+
+  A concept = concepts/frag-<id>.md — ONE belief per file, prose body.
+  Write the BELIEF: the ruling, the why, the open questions — what no tool
+  can derive. NEVER prose-duplicate runnable code, tests, or probe results;
+  reference them by name (they move; restated prose lies).
+  Unsure evolve vs correct? It's evolve — correct means "was NEVER right".
+  Blob shas by hand: git rev-parse HEAD:concepts/frag-<id>.md
+  Full discipline: .claude/skills/membrane/SKILL.md`;
 
 // ---------------------------------------------------------------------------
 // 1. World Model gate — UNIVERSAL. Fires on every authored commit.
@@ -149,6 +157,13 @@ if (okfStaged.length === 1 && secs["membrane"] != null) {
       const prior = execFileSync("git", ["rev-parse", `HEAD:${rel}`], { encoding: "utf8" }).trim();
       derived.push(`Occludes: ${prior}`);
     } catch { /* not in HEAD → not an evolve target; validation below reports it */ }
+  }
+  if (action0 === "correct" && !keyIn(mem0, "Severs")) {
+    // the repudiated lineage point is the file's blob at HEAD — same derivation
+    try {
+      const prior = execFileSync("git", ["rev-parse", `HEAD:${rel}`], { encoding: "utf8" }).trim();
+      derived.push(`Severs: ${id}@${prior}`);
+    } catch { /* not in HEAD → nothing to sever; validation below reports it */ }
   }
   if (derived.length) {
     const lines = msg.split("\n");
