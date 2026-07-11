@@ -193,6 +193,42 @@ if (touchesOKF) {
   if (memAckNone)
     memFail("you staged concept files — 'Evolution: acknowledged-none' is false here; declare the lineage");
 
+  // --- 2b. FRAGMENT SHAPE WALL -------------------------------------------
+  // Every staged concepts/frag-*.md must be a well-formed OKF fragment:
+  // frontmatter (type/id/provenance/ts, all non-empty), id == filename stem,
+  // and a prose body after the frontmatter. The lineage trailer above walls the
+  // COMMIT MESSAGE; this walls the FILE SHAPE the SKILL documents — the on-disk
+  // frontmatter requirement that drifted unwalled until it was silently gone.
+  // Read the STAGED blob (`git show :<path>`), never the working tree, so the
+  // gate judges exactly what is being committed. Only frag-*.md is shaped —
+  // other concept files (indexes, notes) keep their own conventions.
+  const fragStaged = okfStaged.filter((f) => /(^|\/)concepts\/frag-[^/]+\.md$/.test(f));
+  for (const rel of fragStaged) {
+    const stem = rel.replace(/^.*\//, "").replace(/\.md$/, "");
+    let text;
+    try { text = execFileSync("git", ["show", `:${rel}`], { encoding: "utf8" }); }
+    catch { continue; } // staged deletion / unreadable — no shape to check
+    const flines = text.split("\n");
+    if ((flines[0] || "").trim() !== "---")
+      memFail(`${rel}: missing OKF frontmatter — open the file with a '---' line, then 'type/id/provenance/ts', a closing '---', then the belief body`);
+    let fend = -1;
+    for (let i = 1; i < flines.length; i++) if (flines[i].trim() === "---") { fend = i; break; }
+    if (fend < 0)
+      memFail(`${rel}: frontmatter is never closed — add a '---' line after the 'type/id/provenance/ts' block`);
+    const fm = flines.slice(1, fend).join("\n");
+    const fmField = (k) => { const m = fm.match(new RegExp("^" + k + ":\\s*(.*)$", "m")); return m ? m[1].trim() : null; };
+    const eg = { type: "belief", id: stem, provenance: "<session / source of this belief>", ts: "<iso8601>" };
+    for (const k of ["type", "id", "provenance", "ts"]) {
+      const v = fmField(k);
+      if (v == null || v === "")
+        memFail(`${rel}: missing frontmatter field '${k}' — add '${k}: ${eg[k]}'`);
+    }
+    if (fmField("id") !== stem)
+      memFail(`${rel}: frontmatter 'id: ${fmField("id")}' must equal the filename stem — set 'id: ${stem}' (id == filename)`);
+    if (flines.slice(fend + 1).join("\n").trim() === "")
+      memFail(`${rel}: no prose body after the frontmatter — an OKF fragment is frontmatter + a belief body`);
+  }
+
   const need = { create: [], evolve: ["Occludes"], merge: ["Parents"], split: ["Parents"], correct: ["Severs", "Reason"] };
   const action = keyIn(mem, "Action");
   if (!action) memFail("declare an Action: (create/evolve/merge/split/correct)");
