@@ -30,7 +30,7 @@ generated dispatch table had zero `.pre`-stage transforms. The coupling to
 
 ## The rule this establishes
 
-- An unbound flow head whose event carries a `return_phantom` must **materialize
+- An unbound flow head whose tor carries a `return_phantom` must **materialize
   its implicit discard** (`return_binding = "_"`) before enforcement runs, so the
   discard is visible to the machinery identically to the spelled-out `(): _` form
   (the green pin 330_094 is the reference shape). A transform that drops a bind
@@ -42,8 +42,8 @@ generated dispatch table had zero `.pre`-stage transforms. The coupling to
   passed clean under strict/disable — a [[frag-no-fallbacks]] violation in the
   enforcement path itself.
 - Declaration validity is independent of insertion mode: KORU083 (`[!]` must be a
-  void event) now also fires under disable/strict, and now catches `[!]` on a
-  bare-return `-> T` event (single-return moved non-void-ness out of `branches`
+  void tor) now also fires under disable/strict, and now catches `[!]` on a
+  bare-return `-> T` tor (single-return moved non-void-ness out of `branches`
   into the return type).
 
 ## The record-field frontier is CLOSED (2026-07-18)
@@ -59,7 +59,7 @@ An obligation carried as a **record field** (a return/resume record like
   (keyed `binding.field`, so multiple per record don't collide).
 
 The ruling that settled the *behavior* (Lars: record fields follow the SAME rules
-as event-payload fields, which error when undischarged — 690_024): a return-record
+as tor-payload fields, which error when undischarged — 690_024): a return-record
 field is NOT auto-dischargeable. Unlike a whole-value bare-return obligation
 (330_094, auto-discharged) or a branch-payload field (phantom-checker-tracked, so
 an inserted disposer type-checks), a return-record field is invisible to the
@@ -77,7 +77,7 @@ Mid-chain unbound obligation calls (`make(): h |> bump(h)` where `bump` returns 
 obligation and the chain ends unbound) — the continuation-level twin of this root —
 are now caught. Enforcement used to mint only when a mid-chain invocation carried a
 `return_binding`, so `bump(h)`'s dropped return leaked silently. A TERMINAL
-unbound invocation (`cont.continuations.len == 0`) whose event returns a cleanup
+unbound invocation (`cont.continuations.len == 0`) whose tor returns a cleanup
 obligation now seeds an obligation under a synthetic, unreferencable key. An
 unbound value has no name to `dispose(...)`, so — exactly like the record-field
 case — it is NOT auto-dischargeable: it presents no disposal candidate and falls to
