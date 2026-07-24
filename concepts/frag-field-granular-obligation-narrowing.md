@@ -33,7 +33,7 @@ it. When a record carries obligation-bearing fields — `{ a: *A<obl!>, b: *B<ob
 narrowed record for the caller to rebind — that would make `dispose`'s type depend
 on which record the field came from, i.e. **color the discharge primitive**. The
 narrowing is an implicit effect on the tracked type of the ambient binding; the
-discharge event stays a plain `<!obl>` consumer identical to whole-value discharge.
+discharge tor stays a plain `<!obl>` consumer identical to whole-value discharge.
 
 **Destructure needs no rule of its own.** Naming a subset `{ a }` of `{ a!, b! }`
 leaves `b` un-bound → `b`'s debt is never discharged → the ordinary discharge rule
