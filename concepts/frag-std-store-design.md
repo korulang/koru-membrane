@@ -18,7 +18,7 @@ and three hostile showcase programs, that this spine holds:
   spliced watches/interceptors, the atomicity lock, DI'd backend arms.
 - One lvalue path grammar, four addressing heads (handle / declared key /
   query-row / elided singleton); positional index is never identity.
-- CRUD lifecycle events (`inserted`/`updated`/`removed`) are the single
+- CRUD lifecycle tors (`inserted`/`updated`/`removed`) are the single
   primitive; maintained aggregates are the planner compiling queries into
   the same interceptor branches; `take` = `removed` + a store-named
   phantom obligation (a taken row cannot leak).
@@ -31,9 +31,9 @@ and three hostile showcase programs, that this spine holds:
 
 **Rung one is BUILT and green (2026-07-05, branch `store`):** the (f)
 subflow is real — `create` coordinates, appending per store the typed
-cell, an apply event/proc announcing the written field as a terminal
+cell, an apply tor/proc announcing the written field as a terminal
 branch (`{old,new}` payload usage-synthesized per the (c) lean), and the
-write event implemented by a generated flow whose arms are the
+write tor implemented by a generated flow whose arms are the
 transplanted interceptor+watch branches. This is the first
 transform-minted callable with a Koru-level body in the compiler; the
 cross-store cascade is ordinary calls through generated subflows.
@@ -63,7 +63,7 @@ skew unit numbering), row-addressed apply/write subflow, take
 the insert site's `__site_line` as a comptime arg, so a query only hears
 inserts below it in source (690_005 fires on insert, 690_008 sweeps
 pre-existing rows instead of double-firing); and generated |zig procs
-call generated events directly (`main_module.<n>_event.handler(.{...})`)
+call generated tors directly (`main_module.<n>_event.handler(.{...})`)
 — which met dead_strip's koru-visible-only reachability model and was
 answered by the designed `retain` annotation, not a workaround. The
 parser now accepts dotted paths as destructure field names (ruling 6's
@@ -177,7 +177,7 @@ dischargers name `input:Enemy<std/store:!taken>` (690_036).
 plural `new()` now fire from the write path itself, closing the gap the
 design named at line 21 (CRUD lifecycle is the single primitive) for the
 insert/take half. The mechanism is the **qbody transplant reused whole**:
-each interceptor becomes an event whose inputs are its destructured row
+each interceptor becomes a tor whose inputs are its destructured row
 fields plus an impl flow carrying the body, invoked from the generated
 insert/take |zig via `main_module.<n>_event.handler(.{…})` — inserted after
 the row append and before standing query enters (the contract runs before
@@ -226,7 +226,7 @@ to `_`). This wall has to live in the store transform, and the reason is a
 load-bearing gap worth remembering: **`flow_checker`'s KORU100 pass
 deliberately skips `[transform]` invocations**, and `std/store:new` is one, so
 NOTHING in the normal frontend ever checks the arms attached to it — the store
-transplants the payload into a synthesized event input and the emitter then
+transplants the payload into a synthesized tor input and the emitter then
 auto-discards an unused one, so a bound-but-unused field vanished silently.
 The store now scans each bound field against the body text. The general shape
 (every transform that transplants a bound payload has the same latent hole;
@@ -264,7 +264,7 @@ now DISENTANGLED (a bisection matters here — one was misdiagnosed at first):
 - **A value-returning impl-flow head with a void `|>` tail leaked an unused
   result (FIXED, 690_029, emitter).** Unmasked by the tail fix: before it, no
   impl flow ever had a value-producing head followed by a void chain, because
-  the tail was dropped. A generated event body (the inserted/removed
+  the tail was dropped. A generated tor body (the inserted/removed
   interceptor impl flow) whose head is a value-returning `__store_write`
   followed by a second write emitted `const result = …` with no discard —
   `unused local constant`. The gap lived in `emitSubflowContinuationsWithDepth`
@@ -302,7 +302,7 @@ a column can hold ANY `*mod:Type<state!>` — `*Player<allocated!>`, `*File<open
 `*Resource<owned!>` are the same citizen. The store no longer hardcodes the
 std/string tuple; it PARSES the column type (`{type, module, state}`) and
 DISCOVERS the canonical discharger from the program (the one void `<!state>`-
-consuming event in the type's module), then emits every site — storage cell,
+consuming tor in the type's module), then emits every site — storage cell,
 insert-consume phantom, take-reissue phantom, teardown call — from those
 discovered values, reusing the `buildKoruModulePath`/`<event>_event.handler`
 convention. **Pure `koru_std/store.kz` work — zero compiler/`src/` change.** The
@@ -379,18 +379,18 @@ Splitting it (admit `removed`, keep `updated`) is the whole change — react-on-
 delete for a reactive todo. Still pure `koru_std/store.kz`, generalized via
 `field_owned_info`. This closes Path B's
 read→react→write arc: an owned column is now a first-class writable, reactive
-citizen. The consume rides the user-facing `__store_write_*` event; the
+citizen. The consume rides the user-facing `__store_write_*` tor; the
 internal apply proc receives the already-owned plain pointer (the two-hop
 phantom placement the build resolved).
 
 **MIXED-field write DE-BUNDLED (2026-07-22, 690_064) — the `captured` model.**
 The WRITE rung above bundled all columns into one `__store_write_<s>(row,
-field, value_0..n)` event (690_049), unwritten slots riding as typed zeros. A
+field, value_0..n)` tor (690_049), unwritten slots riding as typed zeros. A
 scalar's zero is cheap; an OWNED slot has NO typed zero (its value is a consumed
 obligation), so writing a NON-owned field of a `{label: owned, done: i64}`
 store was walled — a `done`-only write couldn't fill `label`'s slot. The fix is
 `control.kz`'s `captured` model made concrete: for an owned-containing store the
-write is DE-BUNDLED into one TARGETED per-field event `__store_fwrite_<s>_<i>
+write is DE-BUNDLED into one TARGETED per-field tor `__store_fwrite_<s>_<i>
 (row, value)` threading ONLY that field's value. A scalar write never references
 an owned sibling's slot or its obligation; the owned field's own write keeps the
 consume-phantom on its single `value` (discharge-old in its apply arm, watch off
