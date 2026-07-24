@@ -60,7 +60,7 @@ design night):
   The import gate is the first evaluating consumer and the one that IS the
   core language — it runs at parse time and decides AST membership — so its
   entries MUST evaluate (the KORU150 wall). The same annotation that is
-  legally inert on an event is an error on an import; the asymmetry is
+  legally inert on a tor is an error on an import; the asymmetry is
   correct because an inert entry on an import is silent gating, the failure
   class this whole design exists to kill.
 - **A bare identifier on a comparison's RHS is a SYMBOL — the word itself,
