@@ -7,7 +7,7 @@ ts: 2026-07-12
 
 # Phantom obligations thread across CHAINED flat bind-form consumers (belief)
 
-Migrating a lone continuation branch on a phantom-returning event
+Migrating a lone continuation branch on a phantom-returning tor
 (`| tx t |> …`) to the single-return bind form (`tx.begin(conn: c): t |> …`)
 must carry the re-issued `<state!>` obligation across EVERY link of the
 chain — identically to a single bind and to a loop back-edge. Lars ruled it
@@ -29,7 +29,7 @@ Root cause (phantom_semantic_checker.zig): only the flow HEAD registered its
 bare-return bind (`recordBareReturnBind` at the flow head, ~line 1056), and a
 named branch's nested continuations registered theirs. The two bare-return
 HEAD-chain paths (the 0-branch void head and the empty-branch void chain)
-resolved nested continuations against the step's event but never recorded the
+resolved nested continuations against the step's tor but never recorded the
 step invocation's own `return_binding` phantom — so an intermediate step's
 bind (`t1(h): a`) reached its consumer with no tracked obligation (spurious
 KORU030 on `a`, cascading to every downstream link). Fix: `recordBareReturnBind`
@@ -83,7 +83,7 @@ downstream terminator-disposal then referenced `_` (`.file = _`, unusable in
 Zig). `renameHeadDiscardBinding` is the has-continuations twin: rename the `_`
 head bind to a synthetic but — unlike the continuation-less twin — do NOT
 append a `|> _`, because the existing continuations already provide the flow
-exit where disposal fires. Fires when the head event returns a phantom
+exit where disposal fires. Fires when the head tor returns a phantom
 obligation.
 
 ## The recurring shape: branch-only logic must learn the bare return
