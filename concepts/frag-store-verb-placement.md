@@ -59,7 +59,7 @@ instead of checker code. Rule sketch: an arm rejecting
 - ~~The RETAINED-RENDER read is a SEPARATE momentary verb.~~ LANDED 2026-07-23
   as `std/store:sweep` (690_067). The momentary twin of `query`: "for each live
   row RIGHT NOW, project, run the body." Lowers SITE-LOCAL — schema from the
-  persistent `__store_insert_<s>` event (the insert path, survives after `new`
+  persistent `__store_insert_<s>` tor (the insert path, survives after `new`
   lowers), body transplanted to a `__store_sweepbody_<s>_L<n>` impl flow, and an
   inline sweep loop emitted AT THE CALL SITE (`.replacement` inline_code +
   `.appended` decls) — NOT a coordinator `__store_qsweep` unit. So it nests
