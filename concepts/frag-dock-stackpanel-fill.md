@@ -9,7 +9,7 @@ tags: [toolchain, vaxis, layout, dock, stackpanel]
 # `stack-panel` inside `dock` is a nested layout, not a component name
 
 Dock's fill slot used to treat every inner tag as a child *component*. Nested
-`<stack-panel dock="fill">` must not look up a component event — it is a
+`<stack-panel dock="fill">` must not look up a component tor — it is a
 **layout container**: dock carves the fill window, then stack-panel owns y
 inside it. (Markup tags are lowercase kebab — `frag-markup-tags-kebab`.)
 
