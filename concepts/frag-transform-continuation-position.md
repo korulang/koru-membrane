@@ -7,7 +7,7 @@ ts: 2026-07-22
 
 # A whole-program transform can't compose in continuation position — the escape matches flow ROOTS, and the nested graft-back is short-circuited (belief)
 
-A `[comptime|transform]` event invoked in **continuation position**
+A `[comptime|transform]` tor invoked in **continuation position**
 (`~seed(): v |> calc-fold { ... } | computed r |> ...`) fails where the SAME
 transform composes fine at top level. The cause is NOT that the transform pass
 skips nested positions — the walker DOES descend (`transform_pass_runner.walkNode`
@@ -20,7 +20,7 @@ recurses into continuations and reaches the site; the panic came through
   GRAFTS it back into the real holding continuation. This composes at any depth.
 - A handler that returns `result.whole_program` (the legacy escape — e.g. the
   canonical `renderHTML`/`calc-fold` transforms that rebuild the program to add a
-  synthesized runtime event+proc) SHORT-CIRCUITS that graft: `spliceSiteResult`
+  synthesized runtime tor+proc) SHORT-CIRCUITS that graft: `spliceSiteResult`
   returns the whole program verbatim. The handler's own rewrite matcher keys on
   `flow.inv()` — the flow ROOT — so on the synthetic view it rewrites the synthetic
   root copy, but the REAL continuation site (whose flow root is `seed`, not the
