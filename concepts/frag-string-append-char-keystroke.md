@@ -9,7 +9,7 @@ tags: [toolchain, string, tui, input]
 # Keystrokes are bytes, not string literals
 
 `std/string:append` takes a host `string` — fine for `" world"`, useless for
-`k.ch` from a TUI key event. Forcing a one-char `from-page` per keystroke is
+`k.ch` from a TUI key tor. Forcing a one-char `from-page` per keystroke is
 a dodge that manufactures obligations just to feed append.
 
 Ruling: `append-char` / `pop-char` are the keystroke surface (pin `610_022`).
