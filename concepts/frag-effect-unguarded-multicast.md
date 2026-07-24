@@ -11,7 +11,7 @@ tags: [effects, KORU051, multicast]
 **Ruling (Lars):** multiple unguarded `! name` handlers are **subscribe-all** —
 language-legal. KORU051 ("too many elses") applies to **exclusive** dispatch:
 `|` outcomes, and `when`-guarded groups that need a single unguarded fallback.
-An event that refuses multicast rejects in **its own transform/emitter**, not
+A tor that refuses multicast rejects in **its own transform/emitter**, not
 via the default flow checker inventing ambiguity.
 
 ## Why
@@ -28,5 +28,5 @@ Handlers emission (first-unguarded-wins) had to catch up — pin `400_173`.
 ## Open edge
 
 Resume-typed effects stay exclusive (one unguarded arm): multicast of resume
-values has no coherent join. An event may still teach-reject multicast in its
+values has no coherent join. A tor may still teach-reject multicast in its
 transform if its contract is single-handler; void `draw`/`tick` fire all.
