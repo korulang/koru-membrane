@@ -25,7 +25,7 @@ indices**, `w`/`h`, `t` seconds.
 stacking only works if a fill can leave the cell bg alone. Writing black
 "because we have no bg" is a lie about the layer below.
 
-**Params** are thin this rung: extra idents on RHS become `f64` event fields
+**Params** are thin this rung: extra idents on RHS become `f64` tor fields
 (same altitude as component props). **Samplers deferred** — 1D palette after a
 real Neo rain wants them; do not invent table sugar ahead of that need.
 
@@ -33,4 +33,4 @@ real Neo rain wants them; do not invent table sugar ahead of that need.
 Probes: `koru-libs/examples/shader_frag.k` (omit-bg). Eyeballs:
 `koru-examples/shader_toy`. Implementation: `koru/vaxis` shader transform.
 Related altitude: `frag-vaxis-named-pump-attach` (pump fuse) — shaders are
-ordinary synthesized events once declared; they ride the same draw arms.
+ordinary synthesized tors once declared; they ride the same draw arms.
