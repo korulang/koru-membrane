@@ -10,7 +10,7 @@ ts: 2026-07-23
 Koru has two branch markers and they are **separate kinds, not interchangeable
 syntax**:
 
-- **`!` — effect arms.** Handle the effects/events an invocation *fires*: `query`
+- **`!` — effect arms.** Handle the effects/tors an invocation *fires*: `query`
   and `watch` install standing rules, lifecycle interceptors (`! inserted` /
   `! removed`), streaming (`! line` / `! row`), capture (`! as`). The invocation
   is a producer; the `!` arms are its effect handlers.
@@ -18,11 +18,11 @@ syntax**:
   match which one it yielded: `insert … | row | full`, `from-page … | ok | err`,
   `take … | item`. A sum-type result.
 
-**The rule (Lars, 2026-07-23): the marker at a call site MUST match the event's
+**The rule (Lars, 2026-07-23): the marker at a call site MUST match the tor's
 declared branch-kind, and the mismatch is a hard FRONTEND reject.** `!` and `|`
 are to be kept extremely well separated — an effect marker on an outcome-branch
 call, or a continuation marker on an effect, is not a stylistic choice, it is a
-kind error. (Open edge, leaning "no": whether one event may declare both a
+kind error. (Open edge, leaning "no": whether one tor may declare both a
 `!name` and a `|name` sharing a name — probably disallowed.)
 
 ## Current state — the wall is NOT built (the defect this fragment pins)
@@ -39,7 +39,7 @@ koru does **not** enforce this today (found reviewing `koru-examples/todo/`):
 The markers ARE semantically distinct *to the compiler* — the correct `| item`
 form is leak-clean and only the marker changed to produce the leak — so this is a
 **missing frontend wall**, not lenient-by-design grammar. The fix: a frontend
-check matching the call-site marker to the invoked event's declared branch-kind,
+check matching the call-site marker to the invoked tor's declared branch-kind,
 rejecting the mismatch with a koru-level diagnostic (flip 400_171/172 to green
 when it lands). Belongs to the "build the emission-seam walls" program — but this
 one sits earlier, at the frontend, before any host code is emitted.
