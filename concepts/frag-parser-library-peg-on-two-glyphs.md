@@ -15,8 +15,8 @@ results, `->` producing the alternative's value). Terminals are regex pattern
 branches unchanged — `std/regex` is the terminal layer, and its own header
 already anticipated this (`scan` self-describes as "the terminal layer of the
 parser stack"). Repetition dissolves into terminals or rule recursion. The
-library invents vocabulary (events), never grammar shape — the same resolution
-as the constructor's Redis walk: verbs are events, not a DSL.
+library invents vocabulary (tors), never grammar shape — the same resolution
+as the constructor's Redis walk: verbs are tors, not a DSL.
 
 **The surface RATIFIED on the 2026-07-12 walk (supersedes this frag's earlier
 nested-arm claim, which Lars ruled an invalid AST shape — see the doctrine
@@ -46,7 +46,7 @@ the parser reject it. Effect arms keep exactly one aligned resume level
 
 **`[with]` RULED (Lars, same walk): scoped vocabulary resolution.** A
 `[with]` annotation on a region invocation lets the resolver check the
-invoked module for otherwise-UNRESOLVED events in the flow's immediate
+invoked module for otherwise-UNRESOLVED tors in the flow's immediate
 lexical subtree — `match(v)`, `sub(value)`, `lit("]")` bare. Unresolved-only
 (never shadows), multiple `[with]`s allowed, ambiguity forces an explicit
 pick (the keyword-implementation precedent). Boundary doctrine: full
