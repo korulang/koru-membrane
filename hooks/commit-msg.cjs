@@ -10,13 +10,14 @@
 //                      change here?" is always a cheap, honest, answerable
 //                      question — `acknowledged-none` is a true, common answer.
 //
-//   ## Membrane      — OKF-AWARE gate. Fires ONLY when the commit actually stages
-//                      concept files (concepts/*.md). Lineage trailers (the five
-//                      verbs) are required there. A code commit that touches no
-//                      OKF is never forced into a meaningless "null evolution" —
-//                      that asymmetry is the whole reconciliation: you can force
-//                      the signal QUESTION everywhere, but evolution is TRIGGERED
-//                      by an OKF change, never an obligation on every commit.
+//   ## Membrane      — UNIVERSAL gate, OKF-AWARE contents. Every commit answers
+//                      "did a belief change?" — silence is rejected here too. What
+//                      the answer must CONTAIN is what varies: a commit that stages
+//                      concept files owes full lineage (the five verbs); one that
+//                      stages none discharges with `Evolution: acknowledged-none`.
+//                      So the QUESTION is asked everywhere and the OBLIGATION is
+//                      triggered by an OKF change — a code commit is never forced
+//                      into a meaningless "null evolution", only into saying so.
 //
 // Reject-by-default with a CONSCIOUS opt-out (`acknowledged-none`, never silence),
 // so a discipline can't be skipped by inertia — only by a deliberate, recorded
@@ -106,9 +107,43 @@ if (!wmAckNone && nSignals === 0)
 // register-on-miss — the interface GROWS as you declare, never blocks. You can't
 // make up a signal: declaring one that isn't defined defines it (as an orphan).
 // That's the floatable local ontology accumulating on its own, statically checked.
+//
+// EXCEPT for near-misses. Register-on-miss cannot tell new vocabulary from a
+// typo, and a typo'd signal silently becomes a second, near-identical entry in
+// the very ontology this gate exists to keep coherent — drift introduced by the
+// anti-drift mechanism. So a name within edit-distance 1 of an existing signal
+// is rejected rather than minted. Deliberate neighbours are still reachable:
+// create the .signal file yourself, which is the conscious act the rest of this
+// hook already asks for everywhere else.
+function editDistance1(a, b) {
+  if (a === b) return false;
+  const [s, l] = a.length <= b.length ? [a, b] : [b, a];
+  if (l.length - s.length > 1) return false;
+  let i = 0, j = 0, edits = 0;
+  while (i < s.length && j < l.length) {
+    if (s[i] === l[j]) { i++; j++; continue; }
+    if (++edits > 1) return false;
+    if (s.length === l.length) { i++; j++; } else { j++; }
+  }
+  return true;
+}
+const knownSignals = (() => {
+  try { return fs.readdirSync("signals").filter((f) => f.endsWith(".signal")).map((f) => f.slice(0, -7)); }
+  catch { return []; }
+})();
 for (const nm of [...wm.matchAll(/^Signal:\s*(\S+)/gim)].map((m) => m[1])) {
   const sigPath = `signals/${nm}.signal`;
   if (fs.existsSync(sigPath)) continue;
+  const near = knownSignals.find((k) => editDistance1(nm, k));
+  if (near) {
+    fail("World Model",
+      `signal '${nm}' is one character from the existing '${near}' — refusing to mint a near-duplicate`,
+      `  If '${nm}' is a typo, fix it to '${near}'.\n` +
+      `  If it is genuinely a new signal, define it on purpose first:\n` +
+      `    printf 'name: ${nm}\\nkind: inferred\\nshape: categorical\\nface: in\\nmembrane: false\\n' > signals/${nm}.signal\n` +
+      `  Register-on-miss grows the ontology for clearly-new names; it will not\n` +
+      `  quietly split an existing one in two.`);
+  }
   try {
     fs.mkdirSync("signals", { recursive: true });
     fs.writeFileSync(sigPath,
@@ -298,4 +333,10 @@ if (fs.existsSync(CC)) {
     fs.writeFileSync(process.argv[2], lines.join("\n"));
     console.error(`  worldmodel: engine ran → commit-silence=${value}${alarm === "1" ? " (STALL)" : ""} — sealed into the commit`);
   } catch { /* measured layer is best-effort — never block a commit on it */ }
+} else if (fs.existsSync("models/commit_cadence")) {
+  // The model is HERE but not BUILT. Skipping is still correct (the measured
+  // layer never blocks), but skipping *silently* makes "this repo does not
+  // measure cadence" and "this repo intends to and isn't" look identical — so
+  // every commit quietly loses a signal the repo meant to collect. Say it.
+  console.error(`  worldmodel: models/commit_cadence present but ${CC} is not built — commit-silence NOT measured (build: models/commit_cadence/build.sh)`);
 }
