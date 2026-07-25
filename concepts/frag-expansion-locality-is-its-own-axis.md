@@ -17,7 +17,8 @@ composition boundary, and every module-boundary failure we have found sits on it
 | ordinary value tors | **yes** (koru-examples/ledger, gallery/content) |
 | local-expansion transforms — `std/template:define` | **yes** |
 | keyword tors — `cond`, `if` | **yes**, since 50182722 (110_021) |
-| whole-program-synthesis transforms — `std/store`, vaxis pump attach | **no** |
+| whole-program-synthesis transforms — vaxis pump attach, store ENVELOPE writes | **no** |
+| `std/store` single-field read/write | **yes**, since d887b5ae (110_022/690_078) |
 
 ## The predictive claim, and its confirmation
 
@@ -73,7 +74,23 @@ cannot be used from a second file. Nothing tells you which is which except
 importing it and watching it break. That is a missing declaration, not a skill
 gap.
 
-Corollary for app authors, true today: a Koru app can factor out what it
-*computes* but not what it *flows over state*. Value-only modules work; any flow
-touching a store must stay in the entry. That is why koru-examples' gallery is
-still one file after both 110_021 and the cond fix landed.
+## Moving target — verified 2026-07-25, same night
+
+The boundary is being actively pushed and this fragment was stale within the
+hour of writing. 110_021 landed (keyword tors cross), then d887b5ae landed
+(single-field store reads and writes cross). Re-tested after each: the gallery
+split got one wall further each time.
+
+What still does not cross, SHOWN after d887b5ae:
+- **multi-field store writes.** `stored { s.a: 7, s.b: 9 }` from a module ->
+  `unknown tor 'ops:__store_envwrite_s'`, while the single-field form in the
+  same position prints `a=1 b=0`. The fix reached `__store_write_*` and not
+  `__store_envwrite_*`.
+- **vaxis pump attach.** `koru/vaxis(demo)` from a module ->
+  `unknown tor 'app.arms:koru/vaxis'`.
+
+So the FRAME holds — whole-program synthesis is still the thing that does not
+compose — but the frontier moves per fix, and the honest form of this belief is
+a direction plus a dated probe, never a fixed list. koru-examples' gallery is
+the standing acceptance test: split its key vocabulary into `keys/index.k` and
+whatever it dies on is the next wall.
