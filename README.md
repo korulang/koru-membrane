@@ -25,23 +25,54 @@ in any koru-family repo). This repo is the *data*; the skill is the *discipline*
 
 ## The lineage discipline (commit trailers)
 
-Every corpus commit carries a trailer block. The verb is the judgment:
+Every commit carries two sectioned declarations. Each discipline parses only its
+own section, so the two grammars never collide. The verb is the judgment:
 
 ```
 <verb>(<id>): <one-line summary>
 
-Action:     create | evolve | merge | split | correct
-Concept:    frag-<id>
-Occludes:   <blob-sha>                # evolve only
-Parents:    frag-<id>[, frag-<id>...] # merge/split only
-Severs:     frag-<id>@<blob-sha>      # correct only
-Reason:     <why the prior line was wrong>   # correct only
-Provenance: <session / source>
-Signal:     <type> [value=<n>] [<note>]      # zero or more — the WMFX faucet
-Signals:    none                             # required if no Signal: lines
+## World Model
+Signal: <type> [value=<n>] [<note>]      # one or more — the WMFX faucet
+Signals: acknowledged-none               # or consciously declare none
+
+## Membrane
+Action:   create | evolve | merge | split | correct
+Concept:  frag-<id>
+Occludes: <blob-sha>                     # evolve only (auto-derived if omitted)
+Parents:  frag-<id>[, frag-<id>...]      # merge/split only
+Severs:   frag-<id>@<blob-sha>           # correct only
+Reason:   <why the prior line was wrong> # correct only
+Evolution: acknowledged-none             # when the commit stages no concept file
 ```
 
+Both questions are asked of **every** commit, and silence is rejected — but a
+code commit that changed no belief discharges by saying so, not by inventing a
+null evolution. `Evolution: acknowledged-none` is false if you staged a concept
+file, and a `correct` may never declare `Signals: acknowledged-none`.
+
 The `commit-msg` hook enforces this — see below.
+
+## Reading it — `snap`
+
+The corpus never deletes, so reading all of it is an instruction whose cost grows
+forever. `snap.mjs` is the **bounded** read, and the default way to arrive here:
+
+```bash
+node snap.mjs                      # bounded snapshot, ~6 KB
+node snap.mjs --bytes 16000        # wider — covers every concept
+node snap.mjs --concept frag-<id>  # drill: full belief + its whole lineage
+node snap.mjs --json               # structured, for a renderer
+```
+
+Detail decays with **heat** — git recency first, revision count second. Hot
+beliefs arrive whole, then title + last change, then the one-line commit subject
+alone, then named-only. Every concept lands in exactly one tier, so the corpus's
+true width shows even when its contents don't, and every truncation is announced.
+
+Pure-read and fully derived from git + the working tree: no index, no cache, no
+state, nothing to invalidate. Run it from any repo carrying a `.membrane` pointer
+and it resolves the store itself; otherwise pass `--store <path>`. It works
+against any OKF corpus, not just this one.
 
 ## Enforcement hook
 
@@ -56,5 +87,5 @@ declaration). Non-membrane commits (no `Action:` line) pass untouched.
 
 ## Status
 
-Greenfield. The store is empty (`concepts/` holds only `.gitkeep`); wiring each
-consumer repo's `<store>` pointer is the next step.
+Live. `concepts/` holds the corpus; `koru` and `koru-parser-dogfood` point their
+`<store>` here via a `.membrane` file.
