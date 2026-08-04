@@ -1,3 +1,28 @@
+> # RETIRED 2026-08-04 — the corpus lives in `koru/concepts`
+>
+> **Do not garden here.** This store stopped moving on 2026-07-27 at 64 concepts
+> while `koru/concepts` went on being tended and reached 126. Every consumer's
+> pointer still named this directory, so `snap` run from the live repo served
+> nine-day-old beliefs and a session that trusted the pointer would have written
+> into the dead half.
+>
+> Everything here has been merged forward into `koru` — all 64 concepts (22 of
+> which existed only here), the `hooks/` source of truth, `snap.mjs`,
+> `record.mjs`, `signals.mjs` and `inbox/`. Where the two copies of a concept
+> disagreed, the merge was resolved per-fragment rather than newest-wins: koru's
+> copy was ahead on 13, this store's on 20, and 19 of those 20 differed only by
+> the 2026-07-24 `event` -> `tor` vocabulary rename. The twentieth,
+> `frag-effect-continuation-marker-kinds`, was a real correction this store held
+> and koru's copy contradicted — deleting this directory to tidy up would have
+> silently restored a false belief about a green wall.
+>
+> The history below is kept because the membrane never deletes. It is a record,
+> not a store. `koru` declares no pointer at all, because in-repo IS the
+> documented default; the siblings name `../koru`.
+>
+> The prose that follows describes the arrangement as it was, and is left intact
+> for the same reason.
+
 # koru-membrane
 
 The **shared Membrane memory corpus for the Koru family** — a durable, agent-tended
