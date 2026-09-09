@@ -1,0 +1,20 @@
+Z.object({
+  ruling: Z.string().describe("The load-bearing sentence, imperative form"),
+  ruled_by: Z.string().describe("Who ruled it, e.g. Lars"),
+  ruled_date: Z.string().describe("Date of the ruling, YYYY-MM-DD"),
+  status: Z.enum(["ruled-built", "ruled-partial", "design-settled-unbuilt", "repudiated", "parked"]).describe("Built vs open-rung vs killed — shared with untagged-49"),
+  surface_unit: Z.enum(["invocation-chain", "cell-fill", "layout-container", "markup-tag", "pump-attach", "router-page", "shader", "module-boundary"]).describe("Which unit of the terminal surface the belief is about"),
+  composition: Z.string().describe("How it composes with koru flow, store, obligations — never sealed opaque"),
+  ownership: Z.string().describe("Who owns the bytes or the lifetime at the boundary"),
+  naming: Z.string().describe("The spelling law, if the belief names one"),
+  lowering: Z.string().describe("The lowering path, if the belief lowers markup to invocations"),
+  pins: Z.array(Z.object({
+    id: Z.string().describe("Pin id, e.g. 110_022"),
+    expect: Z.enum(["MUST_RUN", "MUST_FAIL", "TODO"]).describe("What the pin demands"),
+    state: Z.string().describe("green, red, or open")
+  })).describe("Anchoring pins — shared shape with untagged-49"),
+  diagnostics: Z.array(Z.string()).describe("Wall codes cited, e.g. KORU023"),
+  probe: Z.string().describe("Probes, examples, or live surfaces that show it"),
+  related: Z.array(Z.string()).describe("Related frag ids"),
+  open_items: Z.array(Z.string()).describe("Open rungs, dated probes, moving frontiers")
+})

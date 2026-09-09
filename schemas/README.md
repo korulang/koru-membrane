@@ -24,3 +24,4 @@ Two tiers (see `../challenges/FLOAT_CHALLENGE.md`):
 | Schema | Subset | Status |
 |---|---|---|
 | `subsets/untagged-49@v1.zontax` | the 49 untagged concepts (2026-09-09) | seed — floated by hand (Lars + Muse), 14 fields, 6 themes |
+| `subsets/vaxis-7@v1.zontax` | the 7 vaxis-tagged concepts (2026-09-09) | replay #1, serial — 14 fields, surface perspective; shares ruling/pins/diagnostics/status/related/open_items byte-identically so the merge unions clean |
