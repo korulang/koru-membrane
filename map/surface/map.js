@@ -37,14 +37,23 @@ async function load(at) {
     d.className = "card" + (active === o.id ? " active" : "");
     d.innerHTML = `<div class="id">${esc(o.id)}</div>
       <div class="meta">${o.memberCount} members</div>`;
-    d.onclick = () => { active = active === o.id ? null : o.id; render(); };
+    d.onclick = () => {
+      active = active === o.id ? null : o.id;
+      if (active && active !== "blank") ontDetail(active);
+      else if (active === "blank") blankDetail(snap);
+      render();
+    };
     ontsEl.appendChild(d);
   }
   const blankN = snap.nodes.filter((n) => n.lanes.length === 0).length;
   const b = document.createElement("div");
   b.className = "card blanklane" + (active === "blank" ? " active" : "");
   b.innerHTML = `<div class="id">blank — no schema</div><div class="meta">${blankN} concepts · the gap</div>`;
-  b.onclick = () => { active = active === "blank" ? null : "blank"; render(); };
+  b.onclick = () => {
+    active = active === "blank" ? null : "blank";
+    if (active === "blank") blankDetail(snap);
+    render();
+  };
   ontsEl.appendChild(b);
 
   render();
@@ -84,6 +93,30 @@ async function inspect(id) {
       <div class="ev"><div class="t">${new Date(h.ts).toLocaleString()} · ${esc(h.action)} · ${esc(h.sha)}</div>
       <div>${esc(h.summary)}</div>
       ${h.action === "correct" ? `<div class="scar">✕ ${esc(h.reason ?? "")}</div>` : ""}</div>`).join("") || "<p>no lineage events</p>"}`;
+  detailEl.scrollIntoView({ behavior: "smooth", block: "nearest" });
+}
+
+async function ontDetail(id) {
+  const s = await (await fetch(`/api/schema?id=${encodeURIComponent(id)}`)).json();
+  detailEl.innerHTML = `
+    <div style="color:var(--dim)">ontology · ${esc(s.id)} · ${s.fields.length} fields · ${s.members.length} members</div>
+    <div style="margin:10px 0;display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:8px">
+      ${s.fields.map((f) => `
+        <div class="card"><div class="id">${esc(f.name)} <span style="color:var(--dim)">· ${esc(f.type)}</span></div>
+        ${f.describe ? `<div class="belief" style="color:var(--dim)">${esc(f.describe)}</div>` : ""}</div>`).join("")}
+    </div>
+    <div style="color:var(--dim)">overlap with siblings:</div>
+    ${s.others.map((o) => `<div class="meta">${esc(o.id)} · ${o.sharedMembers.length} shared members${o.sharedMembers.length ? ": " + o.sharedMembers.map(esc).join(", ") : ""}</div>`).join("") || "<p>no siblings</p>"}
+    <div style="color:var(--dim);margin-top:8px">members (${s.members.length}):</div>
+    <div class="meta">${s.members.map(esc).join(", ")}</div>`;
+  detailEl.scrollIntoView({ behavior: "smooth", block: "nearest" });
+}
+
+function blankDetail(snap) {
+  const blank = snap.nodes.filter((n) => n.lanes.length === 0);
+  detailEl.innerHTML = `
+    <div style="color:var(--dim)">blank — ${blank.length} concepts no schema covers · the next hunt</div>
+    ${blank.map((n) => `<div class="ev"><div>${esc(n.belief)}</div><div class="t">${esc(n.id)} · ${n.eventCount} events</div></div>`).join("")}`;
   detailEl.scrollIntoView({ behavior: "smooth", block: "nearest" });
 }
 

@@ -171,6 +171,45 @@ function trajectory(id) {
   };
 }
 
+// Naive top-level field parse of a Zontax Z.object body — display only.
+// Splits on top-level commas, captures `name: Z.Type(...)` + .describe("...").
+function parseSchemaFields(text) {
+  const body = text.replace(/^[^{]*\{/, "").replace(/\}\s*$/, "");
+  const fields = [];
+  let depth = 0, cur = "";
+  const parts = [];
+  for (const ch of body) {
+    if (ch === "(" || ch === "{" || ch === "[") depth++;
+    if (ch === ")" || ch === "}" || ch === "]") depth--;
+    if (ch === "," && depth === 0) { parts.push(cur); cur = ""; }
+    else cur += ch;
+  }
+  if (cur.trim()) parts.push(cur);
+  for (const p of parts) {
+    const m = /^\s*([A-Za-z_][A-Za-z0-9_]*)\s*:\s*Z\.([A-Za-z_][A-Za-z0-9_]*)([\s\S]*)$/.exec(p);
+    if (!m) continue;
+    const desc = /\.describe\(\s*"([^"]*)"\s*\)/.exec(m[3]);
+    const nested = m[2] === "object" ? "object{…}" : m[2] === "array" ? `array<${/Z\.([A-Za-z_]+)/.exec(m[3])?.[1] ?? "?"}>` : m[2] === "enum" ? `enum[${(m[3].match(/"([^"]*)"/g) ?? []).map((s) => s.replace(/"/g, "")).join(" | ")}]` : m[2];
+    fields.push({ name: m[1], type: nested, describe: desc ? desc[1] : null });
+  }
+  return fields;
+}
+
+function schemaDetail(id) {
+  const schemas = readSchemas();
+  const s = schemas.find((x) => x.id === id);
+  if (!s) return null;
+  const base = s.id.replace(/@v[0-9]+$/, "");
+  const text = readFileSync(join(ROOT, "schemas", "subsets", s.id + ".zontax"), "utf8");
+  const fields = parseSchemaFields(text);
+  const others = schemas.filter((x) => x.id !== id).map((o) => {
+    const sharedMembers = s.members.filter((m) => o.members.includes(m));
+    return { id: o.id, sharedMembers };
+  });
+  void base;
+  return { id: s.id, fields, members: s.members, others };
+}
+
 // --- http ------------------------------------------------------------------
 
 const MIME = { ".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8", ".css": "text/css; charset=utf-8" };
@@ -193,6 +232,15 @@ const server = createServer((req, res) => {
       if (!t) { res.writeHead(404).end("unknown concept"); return; }
       res.writeHead(200, { "Content-Type": "application/json" });
       res.end(JSON.stringify(t));
+      return;
+    }
+    if (url.pathname === "/api/schema") {
+      // ?id=<schema id> → fields + members + overlap with sibling schemas.
+      const id = url.searchParams.get("id") ?? "";
+      const s = schemaDetail(basename(id));
+      if (!s) { res.writeHead(404).end("unknown schema"); return; }
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify(s));
       return;
     }
     const path = url.pathname === "/" ? "/map.html" : url.pathname;
