@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>MAP — ontology × concepts</title>
+  <style>
+    :root {
+      --void: #04060c; --ink: #d7e3ef; --dim: #5d6b7d;
+      --hair: rgba(160, 190, 220, 0.14);
+      --ember: #ff5a3c; --gold: #ffc94d; --cyan: #59f2ff; --violet: #b06bff;
+      --mono: ui-monospace, "SF Mono", Menlo, monospace;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; overflow: hidden; background: var(--void); color: var(--ink); font-family: var(--mono); }
+    #field { position: fixed; inset: 0 340px 48px 264px; cursor: crosshair; }
+    #rail {
+      position: fixed; left: 0; top: 0; bottom: 48px; width: 264px; z-index: 3;
+      border-right: 1px solid var(--hair); background: rgba(4,6,12,.9);
+      padding: 16px 12px; overflow-y: auto;
+    }
+    #rail h2, #insp h2 { font-size: 11px; letter-spacing: .14em; color: var(--dim); margin-bottom: 8px; }
+    .lane { border: 1px solid var(--hair); border-radius: 8px; padding: 8px 10px; margin-bottom: 8px; cursor: pointer; }
+    .lane.active { border-color: var(--cyan); }
+    .lane .lbl { font-size: 12px; word-break: break-all; }
+    .lane .meta { font-size: 11px; color: var(--dim); margin-top: 4px; }
+    .lane.blank { border-style: dashed; }
+    #insp {
+      position: fixed; right: 0; top: 0; bottom: 48px; width: 340px; z-index: 3;
+      border-left: 1px solid var(--hair); background: rgba(4,6,12,.9);
+      padding: 16px 12px; overflow-y: auto; font-size: 12px;
+    }
+    #insp .belief { margin: 8px 0; line-height: 1.5; }
+    #insp .hist .ev { border-top: 1px solid var(--hair); padding: 6px 0; font-size: 11px; }
+    #insp .hist .t { color: var(--dim); }
+    #insp .scar { color: var(--ember); }
+    #foot {
+      position: fixed; left: 0; right: 0; bottom: 0; height: 48px; z-index: 3;
+      border-top: 1px solid var(--hair); background: rgba(4,6,12,.92);
+      display: flex; gap: 12px; align-items: center; padding: 0 16px;
+      font-size: 11px; color: var(--dim);
+    }
+    #scrub { flex: 1; }
+    header { position: fixed; top: 12px; left: 280px; z-index: 2; pointer-events: none; }
+    header .t { font-size: 20px; } header .s { font-size: 11px; color: var(--dim); }
+  </style>
+</head>
+<body>
+  <canvas id="field"></canvas>
+  <aside id="rail"><h2>ONTOLOGY</h2><div id="lanes"></div>
+    <h2 style="margin-top:12px">LEGEND</h2>
+    <div style="font-size:11px;color:var(--dim)">
+      <div><span style="color:var(--cyan)">●</span> evolved · <span style="color:var(--dim)">◌</span> seeded</div>
+      <div><span style="color:var(--ember)">✕</span> scarred (corrected)</div>
+      <div><span style="color:var(--violet)">●</span> blank (no schema yet)</div>
+      <div style="margin-top:6px">click a node → belief + full trajectory</div>
+    </div>
+  </aside>
+  <header><div class="t">Map</div><div class="s" id="sub">ontology × concepts</div></header>
+  <aside id="insp"><h2>INSPECTOR</h2><div id="detail"><p style="color:var(--dim)">click a node</p></div></aside>
+  <footer id="foot"><span id="cursor">head</span><input id="scrub" type="range" min="0" max="1000" value="1000" /><span id="counts"></span></footer>
+  <script type="module" src="/map.js"></script>
+</body>
+</html>
