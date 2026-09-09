@@ -1,0 +1,21 @@
+Z.object({
+  claim_kind: Z.enum(["semantics-law", "syntax-invariant", "resolution-rule", "pipeline-ordering", "diagnostic-placement", "lowering-contract", "architecture-decision", "design-unbuilt", "repudiation", "process-doctrine", "robustness-law", "expressiveness-result"]).describe("The shape of the claim — what kind of ruling this belief is"),
+  subsystem: Z.enum(["obligation", "branch-flow", "store", "template-transform", "emitter", "parser", "type-system", "module-system", "telemetry", "process"]).describe("Which machinery the belief is about"),
+  status: Z.enum(["ruled-built", "ruled-partial", "design-settled-unbuilt", "repudiated", "parked"]).describe("Built vs open-rung vs killed — pins plus status encode confidence"),
+  ruling: Z.string().describe("The load-bearing sentence, imperative form"),
+  ruled_by: Z.string().describe("Who ruled it, e.g. Lars"),
+  ruled_date: Z.string().describe("Date of the ruling, YYYY-MM-DD"),
+  pins: Z.array(Z.object({
+    id: Z.string().describe("Pin id, e.g. 210_174"),
+    expect: Z.enum(["MUST_RUN", "MUST_FAIL", "TODO"]).describe("What the pin demands"),
+    state: Z.string().describe("green, red, or open")
+  })).describe("Anchoring pins — red-vs-green and MUST_RUN-vs-MUST_FAIL carry meaning"),
+  diagnostics: Z.array(Z.string()).describe("Wall codes cited, e.g. KORU104, PARSE003"),
+  pipeline_stage: Z.string().describe("Stage-A, Stage-C analysis, emission, command-bypass, or multi"),
+  enforcement_home: Z.string().describe("Where the wall lives or should live: file, pass, trellis-law, or doc-only"),
+  repudiates: Z.array(Z.string()).describe("Refs to repudiated beliefs, tests, or commits — empty when none"),
+  related: Z.array(Z.string()).describe("Related frag ids"),
+  open_items: Z.array(Z.string()).describe("Open rungs and not-yets, so they stay queryable"),
+  evidence_kind: Z.string().describe("How the belief is grounded: pin-split, worked-instance, fleet-battery, bench-measurement, adversarial-gauntlet, corpus-rewrite"),
+  failure_tell: Z.string().describe("The detector: how to recognize this failing again")
+})

@@ -12,6 +12,19 @@
 // Routine commits (mechanical signals, or `Signals: acknowledged-none`) produce
 // nothing here — the link only fires when YOU declared a belief changed.
 
+// A Signal: entry runs until the NEXT Signal: line — not until the next newline.
+// FIXED 2026-08-08: both readers below used /^Signal:\s*(.+)$/gim, and `.` does not
+// match a newline, so every note was cut wherever the author's editor happened to
+// wrap. Measured at ~3/4 of authored signal text destroyed before reaching the bus.
+// Worse than data loss: a correction is written setup-first (what was believed, THEN
+// what is true instead), so a cut at the first wrap systematically PRESERVES THE
+// ERROR AND DELETES ITS CORRECTION. Found by the first autonomous gardening run of
+// the `claude` seat (6digit-claude/concepts/frag-the-bus-keeps-the-error-and-drops-the-correction.md).
+const signalEntries = (body) =>
+  body.split(/^Signal:[ \t]*/im).slice(1)
+    .map((chunk) => chunk.split(/^#/m)[0].replace(/\s*\n\s*/g, " ").trim())
+    .filter(Boolean);
+
 const fs = require("fs");
 const path = require("path");
 const { execFileSync } = require("child_process");
@@ -53,7 +66,7 @@ function surfaceSignals() {
       return { kind: g("kind"), face: g("face") };
     } catch { return {}; }
   };
-  const lines = [...sectionBody(msg, "world model").matchAll(/^Signal:\s*(.+)$/gim)].map((m) => m[1].trim());
+  const lines = signalEntries(sectionBody(msg, "world model"));
   for (const line of lines) {
     const name = (line.match(/^(\S+)/) || [])[1];
     if (!name) continue;
@@ -77,8 +90,8 @@ const touched = git(["show", "--name-only", "--format=", "HEAD"]).split("\n").fi
 if (touched.some((f) => /(^|\/)concepts\/[^/]+\.md$/.test(f))) process.exit(0);
 
 const wm = sectionBody(msg, "world model");
-const signals = [...wm.matchAll(/^Signal:\s*(\S+)\s*(.*)$/gim)]
-  .map((m) => ({ type: m[1].toLowerCase(), line: (m[1] + " " + (m[2] || "")).trim() }))
+const signals = signalEntries(wm)
+  .map((entry) => ({ type: ((entry.match(/^(\S+)/) || [])[1] || "").toLowerCase(), line: entry }))
   .filter((s) => isMembrane(s.type));
 if (!signals.length) process.exit(0); // routine commit — nothing to route
 
