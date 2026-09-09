@@ -10,7 +10,10 @@ Two tiers (see `../challenges/FLOAT_CHALLENGE.md`):
 
 ## Rules
 
-1. Every entry must parse: `ZontaxParser` + `parseZodString`, no throw.
+1. Every entry must pass the gate: `node schemas/check.mjs` (exit 0).
+   It parses each schema (`ZontaxParser` + `parseZodString`), verifies
+   every `.members.txt` resolves, and merges all — a `ZontaxMergeError`
+   is a dispute, not a failure (field path printed, exit nonzero).
 2. Every field carries `.describe()`. No `misc`, no `content: Z.string()` blobs.
 3. Merge gate before any `full@` version: all subset schemas must
    `parser.parse(...)` clean together. A `ZontaxMergeError` is a **dispute**,
