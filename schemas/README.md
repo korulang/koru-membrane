@@ -1,6 +1,8 @@
 # schemas/ — the floated-ontology catalog
 
-Two tiers (see `../challenges/FLOAT_CHALLENGE.md`):
+Two tiers (brief template: `signal-trace/challenges/FLOAT_CHALLENGE.md`;
+tenets: `signal-trace/DOCTRINE.md` — general machinery lives with the
+program, domain data lives here):
 
 - `subsets/` — divergent, many. One granular Zontax schema per hunted corpus
   subset. Named `<subset>@v<n>.zontax`. Grows forever; variance is the metric.
@@ -10,7 +12,8 @@ Two tiers (see `../challenges/FLOAT_CHALLENGE.md`):
 
 ## Rules
 
-1. Every entry must pass the gate: `node schemas/check.mjs` (exit 0).
+1. Every entry must pass the gate, run from this repo root:
+   `node ../signal-trace/tools/check.mjs schemas` (exit 0).
    It parses each schema (`ZontaxParser` + `parseZodString`), verifies
    every `.members.txt` resolves, and merges all — a `ZontaxMergeError`
    is a dispute, not a failure (field path printed, exit nonzero).
