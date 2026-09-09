@@ -14,8 +14,10 @@ const subEl = document.getElementById("sub");
 let range = { min: null, max: null };
 let lanes = [];   // schema ids + "blank"
 let nodes = [];
+let edges = [];
 let active = null;
 let hover = null;
+let simHeat = 0;
 
 const COLOR = { seeded: "#5d6b7d", evolved: "#59f2ff", scarred: "#ff5a3c", blank: "#b06bff" };
 
@@ -35,6 +37,7 @@ async function load(at) {
   range = snap.range;
   lanes = [...snap.ontology.map((o) => o.id), "blank"];
   nodes = snap.nodes;
+  edges = snap.edges ?? [];
   subEl.textContent = `ontology × concepts · ${snap.counts.concepts} concepts · ${snap.counts.events} lineage events`;
   cursorEl.textContent = snap.at ? new Date(snap.at).toLocaleString() : "head";
   countsEl.textContent = `${snap.counts.scarred} scarred · ${snap.counts.blank} blank`;
@@ -43,14 +46,14 @@ async function load(at) {
     const d = document.createElement("div");
     d.className = "lane" + (active === o.id ? " active" : "");
     d.innerHTML = `<div class="lbl">${esc(o.id)}</div><div class="meta">${o.memberCount} members</div>`;
-    d.onclick = () => { active = active === o.id ? null : o.id; draw(); markActive(); };
+    d.onclick = () => { active = active === o.id ? null : o.id; simHeat = 1; requestAnimationFrame(tick); markActive(); };
     lanesEl.appendChild(d);
   }
   const blank = snap.nodes.filter((n) => n.lanes.length === 0).length;
   const b = document.createElement("div");
   b.className = "lane blank" + (active === "blank" ? " active" : "");
   b.innerHTML = `<div class="lbl">blank — no schema</div><div class="meta">${blank} concepts · the gap</div>`;
-  b.onclick = () => { active = active === "blank" ? null : "blank"; draw(); markActive(); };
+  b.onclick = () => { active = active === "blank" ? null : "blank"; simHeat = 1; requestAnimationFrame(tick); markActive(); };
   lanesEl.appendChild(b);
   layout();
   draw();
@@ -70,6 +73,7 @@ function laneOf(n) {
 }
 
 function layout() {
+  // Deterministic seed: one horizontal lane per ontology entry.
   const per = new Map();
   for (const n of nodes) {
     const l = laneOf(n);
@@ -83,7 +87,57 @@ function layout() {
     n._x = W * 0.06 + ((n._slot - 0.5) / total) * W * 0.88;
     n._y = (H * (n._lane + 1)) / (L + 1);
     n._r = (2 + Math.min(5, Math.sqrt(n.eventCount + 1))) * devicePixelRatio;
+    n._vx = 0; n._vy = 0;
   }
+  // Springs need something to pull on: index edges by node id.
+  const byId = new Map(nodes.map((n) => [n.id, n]));
+  for (const n of nodes) n._links = [];
+  for (const e of edges) {
+    const a = byId.get(e.from), b = byId.get(e.to);
+    if (a && b) { a._links.push(b); b._links.push(a); }
+  }
+  simHeat = 1;
+  requestAnimationFrame(tick);
+}
+
+function laneY(lane) {
+  const L = Math.max(1, lanes.length);
+  return (canvas.height * (lane + 1)) / (L + 1);
+}
+
+function tick() {
+  // Force layout: lane gravity (y) + weak x anchor + pairwise repulsion +
+  // wikilink/lineage springs. Cools to rest; reheats on load/filter.
+  if (simHeat < 0.01) { simHeat = 0; draw(); return; }
+  const W = canvas.width, dpr = devicePixelRatio;
+  const linkLen = 90 * dpr, repulse = 2600 * dpr * dpr;
+  for (const n of nodes) {
+    if (!visible(n)) continue;
+    let fx = (W / 2 - n._x) * 0.008;                    // weak x anchor
+    let fy = (laneY(n._lane) - n._y) * 0.06;            // lane gravity
+    for (const m of nodes) {
+      if (m === n || !visible(m)) continue;
+      const dx = n._x - m._x, dy = n._y - m._y;
+      const d2 = dx * dx + dy * dy + 400;
+      const f = repulse / d2;
+      const d = Math.sqrt(d2);
+      fx += (dx / d) * f; fy += (dy / d) * f;
+    }
+    for (const m of n._links ?? []) {
+      if (!visible(m)) continue;
+      const dx = m._x - n._x, dy = m._y - n._y;
+      const d = Math.hypot(dx, dy) || 1;
+      const f = (d - linkLen) * 0.02;
+      fx += (dx / d) * f; fy += (dy / d) * f;
+    }
+    n._vx = (n._vx + fx) * 0.82;
+    n._vy = (n._vy + fy) * 0.82;
+    n._x += n._vx * simHeat;
+    n._y += n._vy * simHeat;
+  }
+  simHeat *= 0.96;
+  draw();
+  requestAnimationFrame(tick);
 }
 
 function visible(n) {
@@ -95,6 +149,21 @@ function visible(n) {
 function draw() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   const dpr = devicePixelRatio;
+  // Springs first, faint — the pull made visible.
+  ctx.strokeStyle = "rgba(160,190,220,0.13)";
+  ctx.lineWidth = 1 * dpr;
+  const drawn = new Set();
+  for (const e of edges) {
+    const k = e.from < e.to ? e.from + ">" + e.to : e.to + ">" + e.from;
+    if (drawn.has(k)) continue;
+    drawn.add(k);
+    const a = nodes.find((n) => n.id === e.from), b = nodes.find((n) => n.id === e.to);
+    if (!a || !b || !visible(a) || !visible(b)) continue;
+    ctx.beginPath();
+    ctx.moveTo(a._x, a._y);
+    ctx.lineTo(b._x, b._y);
+    ctx.stroke();
+  }
   for (const n of nodes) {
     if (!visible(n)) continue;
     const dim = hover && hover !== n;

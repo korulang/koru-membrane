@@ -65,12 +65,14 @@ function readConcepts() {
     }
     const body = text.replace(/^---\n[\s\S]*?\n---\n?/, "");
     const firstLine = body.split("\n").find((l) => l.trim() && !l.startsWith("#")) ?? body.split("\n").find((l) => l.trim()) ?? "";
+    const links = [...body.matchAll(/\[\[([^\]|#]+?)(?:[|#][^\]]*)?\]\]/g)].map((m) => m[1].trim());
     out.set(id, {
       id,
       belief: firstLine.replace(/^#+\s*/, "").trim().slice(0, 220),
       tags: meta.tags ? meta.tags.replace(/[\[\]]/g, "").split(",").map((s) => s.trim()).filter(Boolean) : [],
       provenance: meta.provenance ?? null,
       ts: meta.ts ?? null,
+      links,
     });
   }
   return out;
@@ -127,12 +129,31 @@ function fold(at) {
   const range = events.length
     ? { min: events[0].ts, max: events[events.length - 1].ts }
     : { min: null, max: null };
+
+  // Wikilink edges between known concepts (the springs' pull) + lineage edges
+  // from merge/split parents.
+  const edges = [];
+  const known = new Set(concepts.keys());
+  for (const [id, c] of concepts) {
+    for (const t of c.links) {
+      if (known.has(t)) edges.push({ id: `link:${id}>${t}`, kind: "link", from: id, to: t });
+    }
+  }
+  for (const e of events) {
+    if ((e.action === "merge" || e.action === "split") && known.has(e.concept)) {
+      for (const p of e.parents) {
+        if (known.has(p)) edges.push({ id: `${e.sha.slice(0, 10)}:${p}>${e.concept}`, kind: e.action, from: p, to: e.concept });
+      }
+    }
+  }
+
   return {
     generatedAt: Date.now(), at: at ?? null, range,
     ontology: schemas.map((s) => ({ id: s.id, memberCount: s.members.length, provisional: false })),
     counts: { concepts: nodes.length, ...counts, events: events.length },
     nodes,
     events: events.map((e) => ({ sha: e.sha.slice(0, 10), ts: e.ts, action: e.action, concept: e.concept, summary: e.summary })),
+    edges,
   };
 }
 
