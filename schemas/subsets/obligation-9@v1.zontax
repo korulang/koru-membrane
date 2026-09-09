@@ -1,0 +1,17 @@
+Z.object({
+  ruling: Z.string().describe("The load-bearing sentence, imperative form"),
+  ruled_by: Z.string().describe("Who ruled it, e.g. Lars"),
+  ruled_date: Z.string().describe("Date of the ruling, YYYY-MM-DD"),
+  status: Z.enum(["ruled-built", "ruled-partial", "design-settled-unbuilt", "repudiated", "parked"]).describe("Built vs open-rung vs killed — shared across the catalog"),
+  debt_phase: Z.enum(["naming", "issuance", "threading", "discharge", "enforcement", "repudiation"]).describe("Where in the debt lifecycle the belief lives: what the debt is called, where debts are minted, how they travel flow, how they settle, what rejects leaks, or debts declared theater"),
+  debt_subject: Z.string().describe("What resource the debt guards: phantom states, comptime flows, record fields, render bytes, taken rows"),
+  settles_by: Z.string().describe("How this debt settles: auto-discharge, manual wall, per-store opt-in discharger, storer-owned copy, or never — declared theater"),
+  pins: Z.array(Z.object({
+    id: Z.string().describe("Pin id, e.g. 330_094"),
+    expect: Z.enum(["MUST_RUN", "MUST_FAIL", "TODO"]).describe("What the pin demands"),
+    state: Z.string().describe("green, red, or open")
+  })).describe("Anchoring pins — shared shape across the catalog"),
+  diagnostics: Z.array(Z.string()).describe("Wall codes cited, e.g. KORU030"),
+  related: Z.array(Z.string()).describe("Related frag ids"),
+  open_items: Z.array(Z.string()).describe("Open rungs, unbuilt rejections, later rungs")
+})
